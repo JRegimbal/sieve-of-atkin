@@ -91,7 +91,7 @@ pub mod atkin {
             let res = vec![2,3,5];
             let mut tests: Vec<TestInteger> = Vec::new();
             if limit < 2 {
-                panic!("The limit for the sieve must be aboe 2. {} was set as limit.", limit);
+                panic!("The limit for the sieve must be above 2. {} was set as limit.", limit);
             } else {
                 
                 for i in 2..limit {
@@ -120,8 +120,8 @@ pub mod atkin {
             };
 
             let expression: Box<Fn(u64, u64) -> u64> = match case {
-                AtkinCases::C3 => Box::new( |x, y| { if x > y { co_x*x - co_y*y } else { 0 } } ),
-                _ => Box::new( |x, y| { co_x*x + co_y*y } ),
+                AtkinCases::C3  => Box::new( |x, y| { if x > y { co_x*x - co_y*y } else { 0 } } ),
+                _               => Box::new( |x, y| { co_x*x + co_y*y } ),
             };
            
             for i in Squares::new(n) {
@@ -170,10 +170,10 @@ pub mod atkin {
                         match self.tests.binary_search(&TestInteger{ value: n_square, is_prime: true }) {
                             Ok(index)   => { 
                                 self.tests.get_mut(index)
-                                    .expect("Attempted to get known index from tests vector. This shouldn't happen.")
-                                    .set_prime(false);
+                                        .expect("Attempted to get known index from tests vector. This shouldn't happen.")
+                                        .set_prime(false);
                             },
-                            Err(_)  => (),
+                            Err(_)      => (),
                         }
                     }
                 }
