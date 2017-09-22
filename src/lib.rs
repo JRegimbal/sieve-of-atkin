@@ -1,5 +1,30 @@
-mod atkin {
+pub mod atkin {
     extern crate std;
+
+    struct Squares {
+        count: u64,
+        max: u64,
+    }
+
+    impl Squares {
+        pub fn new(max: u64) -> Squares {
+            Squares { count: 0, max: max }
+        }
+    }
+
+    impl Iterator for Squares {
+        type Item = u64;
+        fn next(&mut self) -> Option<Self::Item> {
+            self.count += 1;
+            let square = self.count*self.count;
+            if square > self.max {
+                None
+            } else {
+                Some(self.count*self.count)
+            }
+        }
+    }
+
     #[derive(Copy)]
     #[derive(Eq)]
     struct TestInteger {
@@ -85,45 +110,37 @@ mod atkin {
             //Case 2: flip each solution to 3x^2 + y^2 = n
             //Case 3: flip each solution to 3x^2 - y^2 = n where x > y
             //Case 4: do nothing
-            match case {
-                AtkinCases::C4 => return,
-                _ => (),
-            }
-            let (coefficient_x, coefficient_y): (u64, u64) = match case {
-                AtkinCases::C1 => (4, 1),
-                AtkinCases::C2 => (3, 1),
-                _ => (3, 1),
+            
+            let (co_x,co_y): (u64, u64) = match case {
+                AtkinCases::C1  => (4,1),
+                AtkinCases::C2  => (3,1),
+                AtkinCases::C3  => (3,1),
+                _               => (0,0),
             };
-            match case {
-                AtkinCases::C3 =>
-                    for i in 1..n {
-                        for j in 1..i {
-                            if coefficient_x*i*i - coefficient_y*j*j == n {
-                                self.tests.get_mut(index).unwrap().flip();
-                            }
-                        }
-                    },
-                _ => 
-                    for i in 1..n {
-                        for j in 1..n {
-                            if coefficient_x*i*i + coefficient_y*j*j == n {
-                                self.tests.get_mut(index).unwrap().flip();
-                            }
-                        }
-                    },
-       
+
+            let expression: Box<Fn(u64, u64) -> u64> = match case {
+                AtkinCases::C3 => Box::new(|x, y| { if x > y { co_x*x - co_y*y } else { 0 } }),
+                _ => Box::new(|x, y| { co_x*x + co_y*y }),
+            };
+           
+            for i in Squares::new(n) {
+                for j in Squares::new(n) {
+                    if expression(i, j) == n {
+                        self.tests.get_mut(index).unwrap().flip();
+                    }
+                }
             }
         }
-
+            
         pub fn run(&mut self) {
             // process test integers for different cases
             for i in 0..self.tests.len()-1 {
                 let val = self.tests.get(i).unwrap().clone();
                 let case: AtkinCases = match val.value() % 60 {
-                    1 | 13 | 17 | 29 | 37 | 41 | 49 | 53 => AtkinCases::C1,
-                    7 | 19 | 31 | 43 => AtkinCases::C2,
-                    11 | 23 | 47 | 59 => AtkinCases::C3,
-                    _ => AtkinCases::C4,
+                    1  | 13 | 17 | 29 | 37 | 41 | 49 | 53   => AtkinCases::C1,
+                    7  | 19 | 31 | 43                       => AtkinCases::C2,
+                    11 | 23 | 47 | 59                       => AtkinCases::C3,
+                    _                                       => AtkinCases::C4,
                 };
                 self.process_case(val.value(), i, case);
             }
@@ -165,13 +182,27 @@ mod tests {
     }
 
     #[test]
-    fn atkin_output_1000() {
-        let mut sieve = SieveOfAtkin::new(1000);
+    fn atkin_output() {
+        let mut sieve = SieveOfAtkin::new(10000);
         sieve.run();
         let results = sieve.get_results();
-        for prime in &results {
-           print!("{} ", prime);
+        for prime in results.iter() {
+           assert!(is_n_prime(*prime), "Failed with {}", prime);
         }
-        println!();
+    }
+
+    fn is_n_prime(n: u64) -> bool {
+        let mut prime: bool = true;
+        if n > 2 {
+            for i in 2..n/2 {
+                if n % i == 0 {
+                    prime = false;
+                    break;
+                }
+            }
+        }
+        prime
     }
 }
+
+
