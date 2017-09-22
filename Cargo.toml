@@ -1,5 +1,5 @@
 [package]
-name = "sieve-of-atkin"
+name = "atkin"
 version = "0.1.0"
 authors = ["JRegimbal <juliette.regimbal@gmail.com>"]
 
