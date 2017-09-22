@@ -55,10 +55,6 @@ pub mod atkin {
     }
 
     impl TestInteger {
-        pub fn new(value: u64) -> TestInteger {
-            TestInteger { value: value, is_prime: false }
-        }
-
         pub fn is_prime(&self) -> bool {
             self.is_prime
         }
@@ -94,8 +90,13 @@ pub mod atkin {
         pub fn new(limit: u64) -> SieveOfAtkin {
             let res = vec![2,3,5];
             let mut tests: Vec<TestInteger> = Vec::new();
-            for i in 2..limit {
-                tests.push(TestInteger::new(i));
+            if limit < 2 {
+                panic!("The limit for the sieve must be aboe 2. {} was set as limit.", limit);
+            } else {
+                
+                for i in 2..limit {
+                    tests.push(TestInteger{ value: i, is_prime: false });
+                }
             }
             SieveOfAtkin { results: res, tests: tests }
         }
@@ -106,27 +107,29 @@ pub mod atkin {
         }
 
         fn process_case(&mut self, n : u64, index : usize, case: AtkinCases) {
-            //Case 1: flip each solution to 4x^2 + y^2 = n
-            //Case 2: flip each solution to 3x^2 + y^2 = n
-            //Case 3: flip each solution to 3x^2 - y^2 = n where x > y
+            //Case 1: flip for each solution to 4x^2 + y^2 = n
+            //Case 2: flip for each solution to 3x^2 + y^2 = n
+            //Case 3: flip for each solution to 3x^2 - y^2 = n where x > y
             //Case 4: do nothing
             
             let (co_x,co_y): (u64, u64) = match case {
                 AtkinCases::C1  => (4,1),
                 AtkinCases::C2  => (3,1),
                 AtkinCases::C3  => (3,1),
-                _               => (0,0),
+                _               => { return; },
             };
 
             let expression: Box<Fn(u64, u64) -> u64> = match case {
-                AtkinCases::C3 => Box::new(|x, y| { if x > y { co_x*x - co_y*y } else { 0 } }),
-                _ => Box::new(|x, y| { co_x*x + co_y*y }),
+                AtkinCases::C3 => Box::new( |x, y| { if x > y { co_x*x - co_y*y } else { 0 } } ),
+                _ => Box::new( |x, y| { co_x*x + co_y*y } ),
             };
            
             for i in Squares::new(n) {
                 for j in Squares::new(n) {
                     if expression(i, j) == n {
-                        self.tests.get_mut(index).unwrap().flip();
+                        self.tests.get_mut(index)
+                            .expect("Index passed in process is invalid. This shouldn't happen.")
+                            .flip(); 
                     }
                 }
             }
@@ -135,7 +138,9 @@ pub mod atkin {
         pub fn run(&mut self) {
             // process test integers for different cases
             for i in 0..self.tests.len()-1 {
-                let val = self.tests.get(i).unwrap().clone();
+                let val = self.tests.get(i)
+                    .expect("Index passed in process is invalid. This shouldn't happen.")
+                    .clone();
                 let case: AtkinCases = match val.value() % 60 {
                     1  | 13 | 17 | 29 | 37 | 41 | 49 | 53   => AtkinCases::C1,
                     7  | 19 | 31 | 43                       => AtkinCases::C2,
@@ -147,19 +152,28 @@ pub mod atkin {
             
             // start sieving
             while !self.tests.is_empty() {
-                let first = self.tests.first().unwrap().clone();
+                let first = self.tests.first()
+                    .expect("Attempted to get item from tests vector while it was empty.")
+                    .clone();
                 if first.is_prime() {
                     self.results.push(first.value());
                     let square = first.value() * first.value();
                     let naturals = std::ops::RangeFrom{ start: 1 };
                     for i in naturals {
                         let n_square = i*square;
-                        if n_square > self.tests.last().unwrap().value() {
+                        if n_square > self.tests.last()
+                            .expect("Attempted to get item from tests vector while it was empty.")
+                            .value() {
                             break;
                         }
-                        let res = self.tests.binary_search(&TestInteger{ value: n_square, is_prime: true });
-                        if res.is_ok() {
-                            self.tests.get_mut(res.unwrap()).unwrap().set_prime(false);
+                        
+                        match self.tests.binary_search(&TestInteger{ value: n_square, is_prime: true }) {
+                            Ok(index)   => { 
+                                self.tests.get_mut(index)
+                                    .expect("Attempted to get known index from tests vector. This shouldn't happen.")
+                                    .set_prime(false);
+                            },
+                            Err(_)  => (),
                         }
                     }
                 }
