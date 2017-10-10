@@ -1,5 +1,6 @@
 pub mod atkin {
     extern crate std;
+    use std::thread;
 
     struct Squares {
         count: u64,
