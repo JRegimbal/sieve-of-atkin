@@ -1,5 +1,8 @@
 pub mod atkin {
     extern crate std;
+    use std::sync::{Arc, Mutex};
+    use std::thread;
+    use std::collections::VecDeque;
 
     struct Squares {
         count: u64,
@@ -106,7 +109,7 @@ pub mod atkin {
             self.results.clone()
         }
 
-        fn process_case(&mut self, n : u64, index : usize, case: AtkinCases) {
+        fn process_case_static(n : u64, index : usize, case: AtkinCases, mut tests: Vec<TestInteger>) {
             //Case 1: flip for each solution to 4x^2 + y^2 = n
             //Case 2: flip for each solution to 3x^2 + y^2 = n
             //Case 3: flip for each solution to 3x^2 - y^2 = n where x > y
@@ -127,27 +130,55 @@ pub mod atkin {
             for i in Squares::new(n) {
                 for j in Squares::new(n) {
                     if expression(i, j) == n {
-                        self.tests.get_mut(index)
+                        tests.get_mut(index)
                             .expect("Index passed in process is invalid. This shouldn't happen.")
                             .flip(); 
                     }
                 }
             }
         }
-            
+        
         pub fn run(&mut self) {
-            // process test integers for different cases
+            let mut deque: VecDeque<u64> = VecDeque::new();
             for i in 0..self.tests.len()-1 {
-                let val = self.tests.get(i)
-                    .expect("Index passed in process is invalid. This shouldn't happen.")
-                    .clone();
-                let case: AtkinCases = match val.value() % 60 {
-                    1  | 13 | 17 | 29 | 37 | 41 | 49 | 53   => AtkinCases::C1,
-                    7  | 19 | 31 | 43                       => AtkinCases::C2,
-                    11 | 23 | 47 | 59                       => AtkinCases::C3,
-                    _                                       => AtkinCases::C4,
-                };
-                self.process_case(val.value(), i, case);
+                deque.push_back(i as u64);
+            }
+            let integers = Arc::new(Mutex::new(deque));
+            let mut handles = vec![];
+            let tests = Arc::new(Mutex::new(self.tests.clone()));
+            // process test integers for different cases
+            for _ in 0..10 { //spawns 10 threads
+                let integers = integers.clone();
+                let tests = tests.clone();
+                let handle = thread::spawn(move || {
+                    loop {
+                        let integer = integers.lock().unwrap().pop_front();
+                        if integer.is_none() {
+                            break;
+                        }
+                        let integer = integer.unwrap();
+                        let test = tests.lock().unwrap();
+                        let val = test.get(integer as usize)
+                            .expect("Index passed is invalid. This shouldn't happen.")
+                            .clone();
+                        let case: AtkinCases = match val.value() % 60 {
+                            1  | 13 | 17 | 29 | 37 | 41 | 49 | 53   => AtkinCases::C1,
+                            7  | 19 | 31 | 43                       => AtkinCases::C2,
+                            11 | 23 | 47 | 59                       => AtkinCases::C3,
+                            _                                       => AtkinCases::C4,
+                        };
+                        SieveOfAtkin::process_case_static(val.value(), integer as usize, case, test.to_vec());
+                    }
+                });
+                handles.push(handle);
+            }
+            
+            for handle in handles {
+                handle.join().unwrap();
+            }
+            self.tests.clear();
+            for i in tests.lock().unwrap().to_vec() {
+                self.tests.push(i);
             }
             
             // start sieving
