@@ -109,7 +109,7 @@ pub mod atkin {
             self.results.clone()
         }
 
-        fn process_case_static(n : u64, index : usize, case: AtkinCases, mut tests: Vec<TestInteger>) {
+        fn process_case_static(n : u64, index : usize, case: AtkinCases, tests: &mut Vec<TestInteger>) {
             //Case 1: flip for each solution to 4x^2 + y^2 = n
             //Case 2: flip for each solution to 3x^2 + y^2 = n
             //Case 3: flip for each solution to 3x^2 - y^2 = n where x > y
@@ -139,9 +139,9 @@ pub mod atkin {
         }
         
         pub fn run(&mut self) {
-            let mut deque: VecDeque<u64> = VecDeque::new();
+            let mut deque: VecDeque<usize> = VecDeque::new();
             for i in 0..self.tests.len()-1 {
-                deque.push_back(i as u64);
+                deque.push_back(i);
             }
             let integers = Arc::new(Mutex::new(deque));
             let mut handles = vec![];
@@ -157,8 +157,8 @@ pub mod atkin {
                             break;
                         }
                         let integer = integer.unwrap();
-                        let test = tests.lock().unwrap();
-                        let val = test.get(integer as usize)
+                        let mut test = tests.lock().unwrap();
+                        let val = test.get(integer)
                             .expect("Index passed is invalid. This shouldn't happen.")
                             .clone();
                         let case: AtkinCases = match val.value() % 60 {
@@ -167,7 +167,7 @@ pub mod atkin {
                             11 | 23 | 47 | 59                       => AtkinCases::C3,
                             _                                       => AtkinCases::C4,
                         };
-                        SieveOfAtkin::process_case_static(val.value(), integer as usize, case, test.to_vec());
+                        SieveOfAtkin::process_case_static(val.value(), integer, case, &mut test);
                     }
                 });
                 handles.push(handle);
