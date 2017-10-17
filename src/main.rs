@@ -1,5 +1,6 @@
 extern crate atkin;
-use atkin::atkin::SieveOfAtkin;
+
+use atkin::sieve::SieveOfAtkin;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
