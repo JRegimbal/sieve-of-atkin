@@ -1,6 +1,6 @@
 [package]
 name = "atkin"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["JRegimbal <juliette.regimbal@gmail.com>"]
 
 [dependencies]
