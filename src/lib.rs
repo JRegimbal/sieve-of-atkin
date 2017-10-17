@@ -145,11 +145,13 @@ pub mod atkin {
             }
             let integers = Arc::new(Mutex::new(deque));
             let mut handles = vec![];
-            let tests = Arc::new(Mutex::new(self.tests.clone()));
+            let mut tests = vec![];
+            let (tx, rx) = std::sync::mpsc::channel();
             // process test integers for different cases
             for _ in 0..10 { //spawns 10 threads
                 let integers = integers.clone();
-                let tests = tests.clone();
+                let mut test = self.tests.clone();
+                let t = tx.clone();
                 let handle = thread::spawn(move || {
                     loop {
                         let integer = integers.lock().unwrap().pop_front();
@@ -157,7 +159,6 @@ pub mod atkin {
                             break;
                         }
                         let integer = integer.unwrap();
-                        let mut test = tests.lock().unwrap();
                         let val = test.get(integer)
                             .expect("Index passed is invalid. This shouldn't happen.")
                             .clone();
@@ -169,18 +170,29 @@ pub mod atkin {
                         };
                         SieveOfAtkin::process_case_static(val.value(), integer, case, &mut test);
                     }
+                    t.send(test).unwrap();
                 });
                 handles.push(handle);
             }
-            
+
             for handle in handles {
                 handle.join().unwrap();
             }
-            self.tests.clear();
-            for i in tests.lock().unwrap().to_vec() {
-                self.tests.push(i);
+
+            for _ in 0..9 {
+                match rx.recv() {
+                    Ok(x)   => tests.push(x),
+                    _       => (),
+                }
             }
-            
+
+            for i in tests {
+                for j in 0..self.tests.len()-1 {
+                    let current = self.tests.get(j).unwrap().is_prime();
+                    self.tests.get_mut(j).unwrap().set_prime(current ^ i.get(j).unwrap().is_prime());
+                }
+            }
+
             // start sieving
             while !self.tests.is_empty() {
                 let first = self.tests.first()
