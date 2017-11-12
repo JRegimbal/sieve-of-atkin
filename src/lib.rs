@@ -1,5 +1,5 @@
 pub mod sieve;
-mod test_integer;
+pub mod test_integer;
 
 #[cfg(test)]
 mod tests {
@@ -24,7 +24,7 @@ mod tests {
            assert!(is_n_prime(*prime), "Failed with {}", prime);
         }
     }
-
+    /// A slower brute force method to check if a value assumed prime actually is.
     fn is_n_prime(n: u64) -> bool {
         let mut prime: bool = true;
         if n > 2 {

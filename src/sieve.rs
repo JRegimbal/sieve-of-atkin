@@ -4,7 +4,7 @@ use std::sync::mpsc;
 use std::thread;
 use std::collections::VecDeque;
 
-
+/// An iterator that returns the nth integer squared.
 struct Squares {
     count: u64,
     max: u64,
@@ -29,19 +29,26 @@ impl Iterator for Squares {
     }
 }
 
+/// A struct containing the range of integers to test for primeness and primes in that set.
 pub struct SieveOfAtkin {
     results: Vec<u64>,
     tests: Vec<TestInteger>,
 }
-
+/// The possible cases for deciding what happens to an integer in the sieve.
+/// Uses their value (mod 60).
 enum AtkinCases {
+    /// For n = 1, 13, 17, 29, 37, 41, 49, or 53 (mod 60). 
     C1,
+    /// For n = 7, 19, 31, or 43 (mod 60).
     C2,
+    /// For n = 11, 23, 47, or 59 (mod 60).
     C3,
+    /// For any other n (mod 60) not specified in the previous cases.
     C4,
 }
 
 impl SieveOfAtkin {
+    /// Creates a new `SieveOfAtkin` that can find primes up to `limit`.
     pub fn new(limit: u64) -> SieveOfAtkin {
         let res = vec![2,3,5];
         let mut tests: Vec<TestInteger> = Vec::new();
@@ -57,10 +64,19 @@ impl SieveOfAtkin {
     }
 
     // returns a copy so we don't need to worry about our vector being mutated
+    /// Returns a copy of the vector containing sieved primes.
     pub fn get_results(&self) -> Vec<u64> {
         self.results.clone()
     }
-
+    
+    /// Sets possible primes for integers in the sieve.
+    ///
+    /// Will flip `TestInteger::prime` for each solution to some equation defined by case.
+    /// `AtkinCases::C1`: 4x^2 + y^2 = n.
+    /// `AtkinCases::C2`: 3x^2 + y^2 = n.
+    /// `AtkinCases::C3`: 3x^2 - y^2 = n for x > y.
+    ///
+    /// For `AtkinCases::C4` nothing is done and `TestInteger::prime` is not flipped.
     fn process_case_static(n : u64, index : usize, case: AtkinCases, tests: &mut Vec<TestInteger>) {
         //Case 1: flip for each solution to 4x^2 + y^2 = n
         //Case 2: flip for each solution to 3x^2 + y^2 = n
@@ -90,6 +106,7 @@ impl SieveOfAtkin {
         }
     }
 
+    /// Function which finds primes in the sieve using multiple threads.
     pub fn run(&mut self) {
         let mut deque: VecDeque<usize> = VecDeque::new();
         for i in 0..self.tests.len()-1 {

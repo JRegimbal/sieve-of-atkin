@@ -3,4 +3,13 @@ name = "atkin"
 version = "1.0.0"
 authors = ["JRegimbal <juliette.regimbal@gmail.com>"]
 
+[lib]
+name = "atkin"
+path = "src/lib.rs"
+
+[[bin]]
+name = "get_primes"
+path = "src/main.rs"
+doc = false
+
 [dependencies]
